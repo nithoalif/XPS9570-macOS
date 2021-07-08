@@ -1,9 +1,7 @@
-> :warning: Some parts of this guide are kinda outdated and don't apply to the current state of this repo anymore.
-
 ![Screenshot](img/screenshot.png)
 
 # Dell XPS 15 9570 Big Sur
-A collection of all resources needed to run macOS Big Sur on a Dell XPS 15 9570
+A collection of all resources needed to run macOS (Big Sur as of 8 July 2021) on a Dell XPS 15 9570 4K model
 
 ## 🔍 Overview
 This is more of a compilation of information and configs from various repositories and forums than a place where real development happens. This repository should contain everything needed to get Big Sur up and running on your specific Dell XPS 9570 configuration.
@@ -14,14 +12,14 @@ This is more of a compilation of information and configs from various repositori
 | ------------- | ------------- | ------------- |
 | **Intel iGPU** | ✅ Working | Fully supported. Both 2560x1440@144Hz over HDMI and 4k@60Hz over DisplayPort have been tested |
 | **Trackpad** |  ✅ Working | Full gesture support. Probably the best trackpad experience on a non-mac.
-| **iMessages and App Store** | ✅ Working | Just follow the  [guide below](#%E2%84%B9%EF%B8%8F-changing-serial-number-board-serial-number-and-smuuid) |
+| **iMessages and App Store** | 🔶 Partially working | Try to follow the  [this guide](https://dortania.github.io/OpenCore-Post-Install/universal/iservices.html) |
 | **Speakers and Headphones** | ✅ Working | To permanently fix headphones follow the instructions [here](#-audio) |
 | **Built-in Microphone** | ✅ Working |
 | **Webcam** | ✅ Working | Fully working, is detected as Integrated Webcam |
 | **SD Reader** | ✅ Working | Fully supported, but rather slow |
 | **Handoff** | ✅ Working |
 | **Unlock with Watch** | 🔶 Buggy | Works, but it tends to disable itself after sleep or reboot |
-| **Wi-Fi/BT** | 🔶 Working, but not OOB | The stock Killer card must be replaced with a compatible one. See [here](#-wi-fibluetooth) |
+| **Wi-Fi/BT** | ✅ Working | Use the experimental AirportItlwm to enable wifi with intel wireless card |
 | **Thunderbolt/USB-C** | 🔶 Partially working | Normal USB-C and charging work as intended. Thunderbolt works, but hotplugging is broken. Thunderbolt devices and docking stations have to be attached prior to boot to work properly. However, display over Thunderbolt seems to hotplug fine. |
 | **Touchscreen** | 🔶 Working, but high power consumption | The touchscreen works fine and emulates a huge trackpad. This means you can do all native macOS gestures. However, power management isn't that great. [Battery drain](https://github.com/jaromeyer/XPS9570-Catalina/issues/1) is very high. If you don't need it, you can [disable](#-display) it completely. |
 | **NVIDIA GPU** | ❌ Not working | Will never work because of Nvidia Optimus and Apple completely dropped Nvidia support beginning with Mojave. Thus it's completely disabled to save power. |
@@ -54,7 +52,7 @@ Find the EFI partition of your USB flash drive. Normally its entry 1 under /dev/
 Now that you have access to the EFI partition, the real fun starts.
 
 ### Configuring EFI
-Clone this repository to get the base EFI folder as well as all additional kexts and patches. Now you will have to prepare the EFI folder for your exact hardware configuration. There are two different configs. Find the one that matches your specific XPS model and rename it to `config.plist`. Read through the [hardware section](#-Hardware) to learn more about the different options. Once everything is configured properly, copy the folder into the EFI partition you have mounted in the previous step.
+Clone this repository to get the base EFI folder as well as all additional kexts and patches. Now you will have to prepare the EFI folder for your exact hardware configuration. Read through the [hardware section](#-Hardware) to learn more about the different options. Once everything is configured properly, copy the folder into the EFI partition you have mounted in the previous step.
 
 ### Booting the installer
 After having created the installer USB flash drive, you are ready to install macOS on your XPS. Make sure SSD mode is set to AHCI mode instead of RAID in BIOS otherwise, macOS won't be able to detect your SSD. Select your USB flash drive as boot media and go through the macOS installer like you would on a real mac. Once you have come to the desktop, advance to the next step.
@@ -74,18 +72,6 @@ Almost all changes are done inside the OpenCore configuration file. I strongly r
 ### 🔈 Audio
 Without any modifications, the headphone jack is buggy. External microphones aren't detected and the audio output may randomly stop working or start making weird noises. Sometimes un- and replugging the headphones works, but that's pretty annoying and unreliable. To permanently fix this issue you will have to install [this fork of ComboJack](https://github.com/lvs1974/ComboJack).
 
-### 📶 Wi-Fi/Bluetooth
-The stock Killer Wi-Fi card will never be supported in macOS. So to use Wi-Fi, you will have to replace it for a supported card. This repository is configured to work out-of-the-box with both the Dell DW1830 and DW1560 wireless adapter.
-
-Another option for a fraction of the price would be the [Dell DW1820a](https://www.aliexpress.com/item/32918457901.html). However it is a bit slower than the cards mentioned above and in my experience has problems with some 5GHz networks.
-
-### 📺 Display
-This repository contains configs for both FHD and 4K. Just choose the one that matches your setup and rename it to `config.plist`.
-
-Also, I strongly suggest enabling subpixel antialiasing for the FHD screen.
-
-`defaults write -g CGFontRenderingFontSmoothingDisabled -bool NO`
-
 ### 🔋 Power management
 Hibernation is not supported on a Hackintosh and everything related to it should be completely disabled. Disabling additional features prevents random wakeups while the lid is closed. After every update, these settings should be reapplied manually.
 
@@ -104,20 +90,6 @@ For the best power management it's recommended to disable CFG lock and let macOS
 
 ### ⚡️ Performance
 CPU power management is done by `CPUFriend.kext` while `CPUFriendDataProvider.kext` defines how it should be done. `CPUFriendDataProvider.kext` is generated for a specific CPU and power setting. The one supplied in this repository was made for the i7-8750H. In case you have another CPU, you can use [one-key-cpufriend](https://github.com/stevezhengshiqi/one-key-cpufriend) to generate your own `CPUFriendDataProvider.kext`.
-
-### ℹ️ Changing Serial Number, Board Serial Number, and SmUUID
-NOTE: With the stock Killer Wi-Fi card, iMessage will never work.
-
-To use iMessage and other Apple services, you need to generate your own serial numbers. This can be done using [Hackintool](https://www.tonymacx86.com/threads/release-hackintool-v3-x-x.254559/). Go to the “Serial“ tab and make sure model is set to `MacBookPro15,1`. Use the barcode-with-apple button to check your generated serial numbers. If the website tells you that the serial number isn't valid, everything is fine. Otherwise, you have to generate a new set.
-
-Next you will have to copy the following values from Hackintool to your `config.plist`:
-- Serial Number -> `Root/PlatformInfo/Generic/SystemSerialNumber`
-- Board Number -> `Root/PlatformInfo/Generic/MLB`
-- SmUUID -> `Root/PlatformInfo/Generic/SystemUUID`
-
-Reboot and Apple services should work.
-
-If they don't, follow [this in-depth guide](https://dortania.github.io/OpenCore-Post-Install/universal/iservices.html). It goes deeper into ROM, clearing NVRAM, clearing Keychain (missing this step might cause major issues), and much more.
 
 ## 🔧 Tweaks
 This section talks about various optional tweaks that enhance your experience
@@ -142,4 +114,5 @@ The Samsung PM981 (or more precise the controller it uses) is known to cause ran
 - [xxxzc](https://github.com/xxxzc/xps15-9550-macos) for providing OpenCore support for the XPS 9570
 - [frbuccoliero](https://github.com/frbuccoliero) for PM981 related testing and extending the guide
 - [mr-prez](https://github.com/mr-prez) for the Native Power Management guide
+- [jaromeyer](https://github.com/nithoalif/XPS9570-macOS) for providing his OpenCore EFI folder
 - Everyone else involved in Hackintosh development
